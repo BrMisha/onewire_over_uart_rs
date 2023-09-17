@@ -1,5 +1,7 @@
 #![cfg_attr(not(std), no_std)]
 
+mod low_level;
+
 pub enum Baudrate {
     Br9600,
     Br115200
@@ -19,55 +21,10 @@ pub trait UartTrait {
     fn write_byte(&self, data: u8); // block till transferring is done
 }
 
-fn ow_reset(uart: &mut dyn UartTrait) -> bool {
-    uart.set_baudrate(Baudrate::Br9600);
-    uart.clear_all();
-
-    uart.write_byte(0xF0);
-    matches!(uart.read_byte(), Some(x) if x == 0xF0)
+pub fn reset(uart: &mut dyn UartTrait) -> bool {
+    low_level::ow_reset(uart)
 }
 
-fn ow_write_bit(uart: &mut dyn UartTrait, bit: bool) {
-    uart.set_baudrate(Baudrate::Br115200);
-    uart.clear_all();
-
-    uart.write_byte(
-        match bit {
-            true => 0xFF,
-            false => 0
-        }
-    )
-}
-
-fn ow_read_bit(uart: &mut dyn UartTrait) -> bool {
-    uart.set_baudrate(Baudrate::Br115200);
-    uart.clear_all();
-
-    uart.write_byte(0xFF);
-    matches!(uart.read_byte(), Some(x) if x > 0xFE)
-}
-
-fn ow_transfer_byte(uart: &mut dyn UartTrait, mut byte: u8) -> Option<u8> {
-    uart.set_baudrate(Baudrate::Br115200);
-    uart.clear_all();
-
-    for i in [0..8] {
-        uart.write_byte(
-            match (byte & 1) != 0 {
-                true => 0xFF,
-                false => 0,
-            }
-        );
-        byte>>=1;
-
-        match uart.read_byte() {
-            Some(x) if x > 0xFE => byte |= 128,
-            _ => return None,
-        }
-    }
-
-    Some(byte & 0xFF)
-}
 
 #[cfg(test)]
 mod tests {
