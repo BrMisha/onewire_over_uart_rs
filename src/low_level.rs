@@ -12,12 +12,10 @@ pub fn ow_write_bit(uart: &mut dyn UartTrait, bit: bool) {
     uart.set_baudrate(Baudrate::Br115200);
     uart.clear_all();
 
-    uart.write_byte(
-        match bit {
-            true => 0xFF,
-            false => 0
-        }
-    )
+    uart.write_byte(match bit {
+        true => 0xFF,
+        false => 0,
+    })
 }
 
 pub fn ow_read_bit(uart: &mut dyn UartTrait) -> bool {
@@ -28,24 +26,20 @@ pub fn ow_read_bit(uart: &mut dyn UartTrait) -> bool {
     matches!(uart.read_byte(), Some(x) if x > 0xFE)
 }
 
-pub fn ow_transfer_byte(uart: &mut dyn UartTrait, mut byte: u8) -> Option<u8> {
-    uart.set_baudrate(Baudrate::Br115200);
-    uart.clear_all();
+pub fn ow_write_byte(uart: &mut dyn UartTrait, byte: u8) {
+    for i in 0..8 {
+        ow_write_bit(uart, (byte >> i)&1u8 != 0)
+    }
+}
 
-    for i in [0..8] {
-        uart.write_byte(
-            match (byte & 1) != 0 {
-                true => 0xFF,
-                false => 0,
-            }
-        );
-        byte>>=1;
+pub fn ow_read_byte(uart: &mut dyn UartTrait) -> u8 {
+    let mut v = 0u8;
 
-        match uart.read_byte() {
-            Some(x) if x > 0xFE => byte |= 128,
-            _ => return None,
+    for i in 0..8 {
+        if ow_read_bit(uart) {
+            v |= 1 << i;
         }
     }
 
-    Some(byte & 0xFF)
+    v
 }
