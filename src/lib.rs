@@ -1,5 +1,6 @@
 #![cfg_attr(not(std), no_std)]
 
+pub mod ds18x20;
 pub mod low_level;
 
 pub enum Baudrate {
@@ -25,6 +26,7 @@ pub trait UartTrait {
 pub enum Error {
     // #[cfg(crc)]
     ResetError,
+    Crc
 }
 
 const OW_ROMCODE_SIZE: usize = 8;
@@ -104,8 +106,6 @@ pub fn match_rom(uart: &mut dyn UartTrait, rom: &Rom) -> Result<(), Error> {
     }
 
     low_level::ow_write_byte(uart, Cmd::MATCHROM as u8);
-
-    let mut rom: Rom = Default::default();
 
     for x in rom.0 {
         low_level::ow_write_byte(uart, x);
