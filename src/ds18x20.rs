@@ -16,7 +16,7 @@ pub fn start_measure(uart: &mut dyn UartTrait, rom: Option<&Rom>) -> Result<(), 
     }
 
     match rom {
-        None => low_level::ow_write_byte(uart, crate::Cmd::SKIPROM as u8).ok_or(Error::Uart)?,
+        None => low_level::ow_write_byte(uart, crate::Cmd::SkipRom as u8).ok_or(Error::Uart)?,
         Some(rom) => crate::match_rom(uart, rom)?,
     };
 
@@ -36,7 +36,7 @@ pub fn read_data(
     }
 
     match rom {
-        None => low_level::ow_write_byte(uart, crate::Cmd::SKIPROM as u8).ok_or(Error::Uart)?,
+        None => low_level::ow_write_byte(uart, crate::Cmd::SkipRom as u8).ok_or(Error::Uart)?,
         Some(rom) => crate::match_rom(uart, rom)?,
     };
 

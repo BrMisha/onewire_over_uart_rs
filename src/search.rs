@@ -13,13 +13,7 @@ pub struct SearchState {
     last_discrepancy_index: u8,
 }
 
-pub const SEARCH_NORMAL: u8 = 0xF0;
-pub const MATCH_ROM: u8 = 0x55;
-pub const SKIP_ROM: u8 = 0xCC;
-pub const SEARCH_ALARM: u8 = 0xEC;
-pub const READ_POWER_SUPPLY: u8 = 0xB4;
-
-pub fn device_search(
+fn device_search(
     uart: &mut dyn UartTrait,
     search_state: Option<&SearchState>,
     only_alarming: bool,
@@ -30,16 +24,15 @@ pub fn device_search(
         }
     }
     
-
-    
     if !crate::low_level::ow_reset(uart).ok_or(crate::Error::Uart)?  {
         return Ok(None);
     }
-    if only_alarming {
-        crate::low_level::ow_write_byte(uart, SEARCH_ALARM).ok_or(crate::Error::Uart)?;
-    } else {
-        crate::low_level::ow_write_byte(uart, SEARCH_NORMAL).ok_or(crate::Error::Uart)?;
-    }
+
+    crate::low_level::ow_write_byte(uart, match only_alarming {
+        true => crate::Cmd::SearchAlarm as u8,
+        false => crate::Cmd::SearchNormal as u8,
+    }).ok_or(crate::Error::Uart)?;
+
 
     let mut last_discrepancy_index: u8 = 0;
     let mut address;
@@ -117,7 +110,7 @@ pub fn device_search(
         }
         crate::low_level::ow_write_bit(uart, chosen_bit).ok_or(crate::Error::Uart)?;
     }
-    one_wire_bus::crc::check_crc8::<()>(&address.to_le_bytes()).map_err(|e| crate::Error::CrcMismatch)?;
+    one_wire_bus::crc::check_crc8::<()>(&address.to_le_bytes()).map_err(|_| crate::Error::CrcMismatch)?;
     Ok(Some((
         crate::Rom(address.to_le_bytes()),
         SearchState {

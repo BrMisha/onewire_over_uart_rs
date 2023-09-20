@@ -1,7 +1,7 @@
 #![cfg_attr(not(std), no_std)]
 
 pub mod ds18x20;
-pub mod low_level;
+mod low_level;
 pub mod search;
 
 pub enum Baudrate {
@@ -64,10 +64,12 @@ impl core::str::FromStr for Rom {
 }
 
 pub enum Cmd {
-    SEARCHROM = 0xF0,
-    READROM = 0x33,
-    MATCHROM = 0x55,
-    SKIPROM = 0xCC,
+    SearchNormal = 0xF0,
+    SearchAlarm = 0xEC,
+    ReadRom = 0x33,
+    MatchRom = 0x55,
+    SkipRom = 0xCC,
+    ReadPowerSupply = 0xB4,
 }
 
 pub enum FamilyCode {
@@ -91,7 +93,7 @@ pub fn read_rom(uart: &mut dyn UartTrait) -> Result<Rom, Error> {
         return Err(Error::ResetError);
     }
 
-    low_level::ow_write_byte(uart, Cmd::READROM as u8);
+    low_level::ow_write_byte(uart, Cmd::ReadRom as u8);
 
     let mut rom: Rom = Default::default();
 
@@ -107,7 +109,7 @@ pub fn match_rom(uart: &mut dyn UartTrait, rom: &Rom) -> Result<(), Error> {
         return Err(Error::ResetError);
     }
 
-    low_level::ow_write_byte(uart, Cmd::MATCHROM as u8);
+    low_level::ow_write_byte(uart, Cmd::MatchRom as u8);
 
     for x in rom.0 {
         low_level::ow_write_byte(uart, x);
@@ -115,23 +117,3 @@ pub fn match_rom(uart: &mut dyn UartTrait, rom: &Rom) -> Result<(), Error> {
 
     Ok(())
 }
-
-/*
-pub struct DeviceSearchIter<'a> {
-    search: Option<DeviceSearch>,
-    wire: &'a mut dyn UartTrait,
-}
-
-impl<'a> Iterator for DeviceSearchIter<'a> {
-    type Item = Result<Rom, Error>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let mut search = self.search.take()?;
-        let result = self
-            .wire
-            .search_next(&mut search)
-            .transpose()?;
-        self.search = Some(search);
-        Some(result)
-    }
-}*/
