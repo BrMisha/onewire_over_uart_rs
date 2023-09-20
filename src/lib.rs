@@ -2,6 +2,7 @@
 
 pub mod ds18x20;
 pub mod low_level;
+pub mod search;
 
 pub enum Baudrate {
     Br9600,
@@ -19,14 +20,15 @@ pub trait UartTrait {
     }
 
     fn read_byte(&mut self) -> Option<u8>;
-    fn write_byte(&self, data: u8); // block till transferring is done
+    fn write_byte(&self, data: u8) -> bool; // block till transferring is done
 }
 
 #[derive(Debug, Copy, Clone)]
 pub enum Error {
-    // #[cfg(crc)]
+    Uart,
     ResetError,
-    Crc
+    CrcMismatch,
+    UnexpectedResponse
 }
 
 const OW_ROMCODE_SIZE: usize = 8;
@@ -80,12 +82,12 @@ pub enum FamilyCode {
     DS2433 = 0x23,
 }
 
-pub fn reset(uart: &mut dyn UartTrait) -> bool {
-    low_level::ow_reset(uart)
+pub fn reset(uart: &mut dyn UartTrait) -> Result<bool, Error> {
+    low_level::ow_reset(uart).ok_or(Error::Uart)
 }
 
 pub fn read_rom(uart: &mut dyn UartTrait) -> Result<Rom, Error> {
-    if reset(uart) != true {
+    if reset(uart)? != true {
         return Err(Error::ResetError);
     }
 
@@ -94,14 +96,14 @@ pub fn read_rom(uart: &mut dyn UartTrait) -> Result<Rom, Error> {
     let mut rom: Rom = Default::default();
 
     for i in rom.0.iter_mut() {
-        *i = low_level::ow_read_byte(uart);
+        *i = low_level::ow_read_byte(uart).ok_or(Error::Uart)?;
     }
 
     Ok(rom)
 }
 
 pub fn match_rom(uart: &mut dyn UartTrait, rom: &Rom) -> Result<(), Error> {
-    if reset(uart) != true {
+    if reset(uart)? != true {
         return Err(Error::ResetError);
     }
 

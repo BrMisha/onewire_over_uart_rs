@@ -11,12 +11,12 @@ enum Cmd {
 
 pub fn start_measure(uart: &mut dyn UartTrait, rom: Option<&Rom>) -> Result<(), Error> {
     //Reset, skip ROM and send command to read Scratchpad
-    if !low_level::ow_reset(uart) {
+    if !low_level::ow_reset(uart).ok_or(Error::Uart)? {
         return Err(Error::ResetError);
     }
 
     match rom {
-        None => low_level::ow_write_byte(uart, crate::Cmd::SKIPROM as u8),
+        None => low_level::ow_write_byte(uart, crate::Cmd::SKIPROM as u8).ok_or(Error::Uart)?,
         Some(rom) => crate::match_rom(uart, rom)?,
     };
 
@@ -31,12 +31,12 @@ pub fn read_data(
     check_crc: bool,
 ) -> Result<[u8; 2], Error> {
     //Reset, skip ROM and send command to read Scratchpad
-    if !low_level::ow_reset(uart) {
+    if !low_level::ow_reset(uart).ok_or(Error::Uart)? {
         return Err(Error::ResetError);
     }
 
     match rom {
-        None => low_level::ow_write_byte(uart, crate::Cmd::SKIPROM as u8),
+        None => low_level::ow_write_byte(uart, crate::Cmd::SKIPROM as u8).ok_or(Error::Uart)?,
         Some(rom) => crate::match_rom(uart, rom)?,
     };
 
@@ -46,16 +46,16 @@ pub fn read_data(
         true => {
             let mut buff: [u8; 9] = Default::default();
             for i in &mut buff {
-                *i = low_level::ow_read_byte(uart);
+                *i = low_level::ow_read_byte(uart).ok_or(Error::Uart)?;
             }
 
             match one_wire_bus::crc::check_crc8::<()>(&buff) {
-                Err(_) => Err(crate::Error::Crc),
+                Err(_) => Err(crate::Error::CrcMismatch),
                 Ok(_) => Ok([buff[0], buff[1]]),
             }
         }
         false => {
-            let r = [low_level::ow_read_byte(uart), low_level::ow_read_byte(uart)];
+            let r = [low_level::ow_read_byte(uart).ok_or(Error::Uart)?, low_level::ow_read_byte(uart).ok_or(Error::Uart)?];
             Ok(r)
         }
     }
