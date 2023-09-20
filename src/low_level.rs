@@ -24,7 +24,7 @@ pub fn ow_write_bit(uart: &mut dyn UartTrait, bit: bool) -> Option<()> {
 
     match r {
         true => Some(()),
-        false => None
+        false => None,
     }
 }
 
@@ -32,13 +32,10 @@ pub fn ow_read_bit(uart: &mut dyn UartTrait) -> Option<bool> {
     uart.set_baudrate(Baudrate::Br115200);
     uart.clear_all();
 
-    if uart.write_byte(0xFF) == false {
+    if !uart.write_byte(0xFF) {
         return None;
     }
-    match uart.read_byte() {
-        None => None,
-        Some(x) => Some(x > 0xFE)
-    }
+    uart.read_byte().map(|x| x > 0xFE)
 }
 
 pub fn ow_write_byte(uart: &mut dyn UartTrait, byte: u8) -> Option<()> {

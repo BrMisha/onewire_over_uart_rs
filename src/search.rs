@@ -23,16 +23,19 @@ fn device_search(
             return Ok(None);
         }
     }
-    
-    if !crate::low_level::ow_reset(uart).ok_or(crate::Error::Uart)?  {
+
+    if !crate::low_level::ow_reset(uart).ok_or(crate::Error::Uart)? {
         return Ok(None);
     }
 
-    crate::low_level::ow_write_byte(uart, match only_alarming {
-        true => crate::Cmd::SearchAlarm as u8,
-        false => crate::Cmd::SearchNormal as u8,
-    }).ok_or(crate::Error::Uart)?;
-
+    crate::low_level::ow_write_byte(
+        uart,
+        match only_alarming {
+            true => crate::Cmd::SearchAlarm as u8,
+            false => crate::Cmd::SearchNormal as u8,
+        },
+    )
+    .ok_or(crate::Error::Uart)?;
 
     let mut last_discrepancy_index: u8 = 0;
     let mut address;
@@ -49,8 +52,7 @@ fn device_search(
             if was_discrepancy_bit {
                 last_discrepancy_index = bit_index;
             }
-            let previous_chosen_bit =
-                (search_state.address & (1_u64 << (bit_index as u64))) != 0;
+            let previous_chosen_bit = (search_state.address & (1_u64 << (bit_index as u64))) != 0;
 
             // choose the same as last time
             crate::low_level::ow_write_bit(uart, previous_chosen_bit).ok_or(crate::Error::Uart)?;
@@ -70,8 +72,8 @@ fn device_search(
         }
 
         //keep all discrepancies except the last one
-        discrepancies = search_state.discrepancies
-            & !(1_u64 << (search_state.last_discrepancy_index as u64));
+        discrepancies =
+            search_state.discrepancies & !(1_u64 << (search_state.last_discrepancy_index as u64));
         continue_start_bit = search_state.last_discrepancy_index + 1;
     } else {
         address = 0;
@@ -110,7 +112,8 @@ fn device_search(
         }
         crate::low_level::ow_write_bit(uart, chosen_bit).ok_or(crate::Error::Uart)?;
     }
-    one_wire_bus::crc::check_crc8::<()>(&address.to_le_bytes()).map_err(|_| crate::Error::CrcMismatch)?;
+    one_wire_bus::crc::check_crc8::<()>(&address.to_le_bytes())
+        .map_err(|_| crate::Error::CrcMismatch)?;
     Ok(Some((
         crate::Rom(address.to_le_bytes()),
         SearchState {
@@ -139,8 +142,7 @@ impl<'a> DeviceSearch<'a> {
     }
 }
 
-impl<'a> Iterator for DeviceSearch<'a>
-{
+impl<'a> Iterator for DeviceSearch<'a> {
     type Item = Result<crate::Rom, crate::Error>;
 
     fn next(&mut self) -> Option<Self::Item> {

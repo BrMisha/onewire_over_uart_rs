@@ -3,10 +3,6 @@ use crate::{low_level, Error, Rom, UartTrait};
 enum Cmd {
     ConvertTemp = 0x44,
     RscratchPad = 0xBE,
-    WscratchPad = 0x4E,
-    CpyscratchPad = 0x48,
-    RecEeprom = 0xB8,
-    RpwrSupply = 0xB4,
 }
 
 pub fn start_measure(uart: &mut dyn UartTrait, rom: Option<&Rom>) -> Result<(), Error> {
@@ -42,7 +38,7 @@ pub fn read_data(
 
     low_level::ow_write_byte(uart, Cmd::RscratchPad as u8);
 
-    return match check_crc {
+    match check_crc {
         true => {
             let mut buff: [u8; 9] = Default::default();
             for i in &mut buff {
@@ -55,7 +51,10 @@ pub fn read_data(
             }
         }
         false => {
-            let r = [low_level::ow_read_byte(uart).ok_or(Error::Uart)?, low_level::ow_read_byte(uart).ok_or(Error::Uart)?];
+            let r = [
+                low_level::ow_read_byte(uart).ok_or(Error::Uart)?,
+                low_level::ow_read_byte(uart).ok_or(Error::Uart)?,
+            ];
             Ok(r)
         }
     }

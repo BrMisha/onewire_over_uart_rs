@@ -28,7 +28,7 @@ pub enum Error {
     Uart,
     ResetError,
     CrcMismatch,
-    UnexpectedResponse
+    UnexpectedResponse,
 }
 
 const OW_ROMCODE_SIZE: usize = 8;
@@ -48,8 +48,8 @@ impl core::str::FromStr for Rom {
         if s.len() < 23 {
             let _ = u8::from_str_radix("", 16)?; // this causes a ParseIntError::Empty
         }
-        Ok(Rom {
-            0: [
+        Ok(Rom (
+            [
                 u8::from_str_radix(&s[0..2], 16)?,
                 u8::from_str_radix(&s[3..5], 16)?,
                 u8::from_str_radix(&s[6..8], 16)?,
@@ -59,7 +59,7 @@ impl core::str::FromStr for Rom {
                 u8::from_str_radix(&s[18..20], 16)?,
                 u8::from_str_radix(&s[21..23], 16)?,
             ],
-        })
+        ))
     }
 }
 
@@ -89,7 +89,7 @@ pub fn reset(uart: &mut dyn UartTrait) -> Result<bool, Error> {
 }
 
 pub fn read_rom(uart: &mut dyn UartTrait) -> Result<Rom, Error> {
-    if reset(uart)? != true {
+    if !(reset(uart)?) {
         return Err(Error::ResetError);
     }
 
@@ -105,7 +105,7 @@ pub fn read_rom(uart: &mut dyn UartTrait) -> Result<Rom, Error> {
 }
 
 pub fn match_rom(uart: &mut dyn UartTrait, rom: &Rom) -> Result<(), Error> {
-    if reset(uart)? != true {
+    if !(reset(uart)?) {
         return Err(Error::ResetError);
     }
 
