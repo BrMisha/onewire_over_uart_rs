@@ -39,7 +39,7 @@ pub fn ow_read_bit(uart: &mut dyn UartTrait) -> Option<bool> {
 }
 
 pub fn ow_write_byte(uart: &mut dyn UartTrait, byte: u8) -> Option<()> {
-    for i in 0..8 {
+    for i in 0..8u8 {
         ow_write_bit(uart, (byte >> i) & 1u8 != 0)?
     }
     Some(())
@@ -48,7 +48,7 @@ pub fn ow_write_byte(uart: &mut dyn UartTrait, byte: u8) -> Option<()> {
 pub fn ow_read_byte(uart: &mut dyn UartTrait) -> Option<u8> {
     let mut v = 0u8;
 
-    for i in 0..8 {
+    for i in 0..8u8 {
         if ow_read_bit(uart)? {
             v |= 1 << i;
         }
